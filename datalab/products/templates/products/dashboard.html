@@ -1,0 +1,45 @@
+<h2>Dashboard</h2>
+<ul>
+    <li>Umumi Mehsul : {{ kpi.products }}</li>
+    <li>Toplam stok : {{ kpi.total_qty }}</li>
+    <li>Orta qiymet : {{ kpi.avg_price }}</li>
+</ul>
+
+<h3>Top Kategoriyalar (Gelir)</h3>
+<table border="1" cellpadding="6">
+    <tr>
+        <th>
+            Kategoriya
+        </th>
+        <th>
+            Gelir
+        </th>
+        <th>
+            Mehsul sayi
+        </th>
+    </tr>
+
+    {% for c in top_cats %}
+        <tr>
+        <td>
+            {{ c.category }}
+        </td>
+
+        <td>
+            {{ c.revenue }}
+        </td>
+
+        <td>
+            {{ c.items }}
+        </td>
+
+        </tr>
+    {% endfor %}
+
+</table>
+
+<p>
+    <a>Mehsullar</a>
+    <a href="{% url 'product_upload' %}">Upload</a>
+    <a>Statistika</a>
+</p>
