@@ -2,6 +2,7 @@ import os
 
 import pandas as pd
 from django.conf import settings
+from django.db.models.functions import TruncMonth, ExtractQuarter
 from django.http import FileResponse
 from django.shortcuts import render
 
@@ -100,3 +101,38 @@ def product_export(request):
     df=pd.DataFrame.from_records(data)
     path=utils.df_to_excel_response(df,"products_export.xlsx")
     return FileResponse(open(path,"rb"),as_attachment=True,filename=os.path.basename(path))
+
+def stats_view(request):
+    revenue_expr=ExpressionWrapper(F("price")*F("quantity"),
+                                   output_field=DecimalField(max_digits=14,decimal_places=2))
+
+    #1 Monthly income
+    monthly=(Product.objects
+             .annotate(month=TruncMonth("tx_date"))
+             .values("month")
+             .annotate(revenue=Sum(revenue_expr),items=Count("id"))
+             )
+
+    quarterly=(Product.objects
+                .annotate(q=ExtractQuarter("tx_date"))
+                .values("q")
+                .annotate(revenue=Sum(revenue_expr),avg_price=Avg("price"))
+                .order_by("q"))
+
+    by_cat=(Product.objects
+            .values("category")
+            .annotate(mean_price=Avg("price"),total_qty=Sum("quantity"))
+            .order_by("-total_qty"))
+
+    top_sku=(Product.objects
+            .values("sku","name","category")
+            .annotate(revenue=Sum(revenue_expr),qty=Sum("quantity"))
+            .order_by("-revenue")[:10])
+
+    low_stock=Product.objects.filter(quantity__lte=5).order_by("quantity","name")[:10]
+
+    ctx=dict(monthly=monthly,quarterly=quarterly,by_cat=by_cat,
+             top_sku=top_sku,low_stock=low_stock)
+
+    return render(request,"products/stats.html",ctx)
+
