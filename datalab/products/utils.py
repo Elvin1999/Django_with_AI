@@ -3,6 +3,9 @@ import pandas as pd
 import numpy as np
 
 from django.conf import settings
+from openpyxl import load_workbook
+from openpyxl.styles import Font,Alignment,PatternFill
+from openpyxl.utils import get_column_letter
 
 def read_any(file_path,sheet_name=None):
     if file_path.lower().endswith(('.xlsx','.xls')):
@@ -59,6 +62,39 @@ def df_to_excel_response(df:pd.DataFrame,fname="export.xlsx"):
     os.makedirs(out_dir,exist_ok=True)
     fpath = os.path.join(out_dir, f"{uuid.uuid4().hex}_{fname}")
     with pd.ExcelWriter(fpath,engine="openpyxl") as w:
-        df.to_excel(w,index=False)
+        df.to_excel(w,index=False,sheet_name="Products")
+
+    wb=load_workbook(fpath)
+    ws=wb.active
+
+    header_font=Font(size=14,bold=True,color="FFFFFF")
+    header_fill=PatternFill(start_color="4F81BD",end_color="4F81BD",fill_type="solid")
+
+
+    blue_fill=PatternFill(start_color="BDD7EE",end_color="BDD7EE",fill_type="solid")
+    green_fill=PatternFill(start_color="C6E0B4",end_color="C6E0B4",fill_type="solid")
+
+    for col_num,col_name in enumerate(df.columns,1):
+        cell=ws.cell(row=1,column=col_num)
+        cell.font=header_font
+        cell.alignment=Alignment(horizontal='center',vertical='center')
+
+        cell.fill=header_fill
+        ws.column_dimensions[get_column_letter(col_num)].width = 30
+
+        if col_name.lower()=="sku":
+            cell.fill=blue_fill
+        elif col_name.lower()=="price":
+            cell.fill=green_fill
+
+    for row in ws.iter_rows(min_row=2,max_row=ws.max_row,max_col=ws.max_column):
+        for cell in row:
+            col_header=ws.cell(row=1,column=cell.column).value
+            if str(col_header).lower()=="sku":
+                cell.fill=blue_fill
+            elif str(col_header).lower()=="price":
+                cell.fill=green_fill
+
+    wb.save(fpath)
     return fpath
 

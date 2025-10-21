@@ -1,10 +1,12 @@
 import os
 
+import pandas as pd
 from django.conf import settings
+from django.http import FileResponse
 from django.shortcuts import render
 
 from . import utils
-from .forms import UploadForm
+from .forms import UploadForm, DateFilterForm
 from .models import Product
 from django.db.models import Count,F,Sum,Avg,DecimalField,ExpressionWrapper
 
@@ -33,7 +35,6 @@ def product_upload(request):
         if form.is_valid():
             up=request.FILES["file"]
             sheet=form.cleaned_data.get("sheet_name") or None
-
             updir=os.path.join(settings.MEDIA_ROOT,"uploads")
             os.makedirs(updir,exist_ok=True)
             fpath=os.path.join(updir,up.name)
@@ -75,3 +76,27 @@ def product_upload(request):
             ctx["msg"]=f"Uploaded : {len(rows)} rows"
 
     return render(request,"products/upload.html",ctx)
+
+def product_list(request):
+    form=DateFilterForm(request.GET or None)
+    qs=Product.objects.all().order_by("-tx_date","-id")
+
+    if form.is_valid():
+        df=form.cleaned_data.get("date_from")
+        dt=form.cleaned_data.get("date_to")
+        cat=form.cleaned_data.get("category")
+        if df:
+            qs=qs.filter(tx_date__gte=df)
+        if dt:
+            qs=qs.filter(tx_date__lte=dt)
+        if cat:
+            qs=qs.filter(category__icontains=cat)
+
+    return render(request,"products/product_list.html",{"form":form,"qs":qs})
+
+def product_export(request):
+    qs=Product.objects.all().order_by("tx_date","sku")
+    data=qs.values('sku','name','category','price','quantity','tx_date')
+    df=pd.DataFrame.from_records(data)
+    path=utils.df_to_excel_response(df,"products_export.xlsx")
+    return FileResponse(open(path,"rb"),as_attachment=True,filename=os.path.basename(path))

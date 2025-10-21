@@ -1,11 +1,11 @@
 <h2>Dashboard</h2>
 <ul>
-    <li>Umumi Mehsul : {{ kpi.products }}</li>
-    <li>Toplam stok : {{ kpi.total_qty }}</li>
-    <li>Orta qiymet : {{ kpi.avg_price }}</li>
+    <li>General Products : {{ kpi.products }}</li>
+    <li>Total Stock : {{ kpi.total_qty }}</li>
+    <li>Average Price : {{ kpi.avg_price }}</li>
 </ul>
 
-<h3>Top Kategoriyalar (Gelir)</h3>
+<h3>Top Categories (Revenue)</h3>
 <table border="1" cellpadding="6">
     <tr>
         <th>
@@ -39,7 +39,7 @@
 </table>
 
 <p>
-    <a>Mehsullar</a>
+    <a href="{% url 'product_list' %}">Products</a>
     <a href="{% url 'product_upload' %}">Upload</a>
-    <a>Statistika</a>
+    <a>Statistics</a>
 </p>
